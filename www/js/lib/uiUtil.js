@@ -60,10 +60,16 @@ define(rqDef, function(settingsStore) {
             // However, the loadImagesJQuery() function in app.js is sequential (it waits for a callback
             // before processing another image) so we do not need to queue WebP images here
             var canvas = document.createElement("canvas");
+            var thisNode = node;
             webpMachine.decodeToCanvas(canvas, content).then(function () {
-                var imgBlob = canvas.toBlob ? canvas.toBlob() : canvas.msToBlob ? canvas.msToBlob() : null;
-                if (!imgBlob) throw('Could not extract image BLOB from canvas!');
-                insertBlob(imgBlob);
+                if (canvas.msToBlob) {
+                    insertBlob(canvas.msToBlob());
+                } else {
+                    if (callback) callback();
+                    canvas.width = thisNode.width;
+                    canvas.height = thisNode.height;
+                    thisNode.parentNode.replaceChild(canvas, thisNode);
+                }
             });
         } else {
             var imgBlob = new Blob([content], {
