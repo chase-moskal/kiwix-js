@@ -51,15 +51,12 @@ define(rqDef, function(settingsStore) {
             // DEV: Note that webpMachine is single threaded and will reject an image if it is busy
             // However, the loadImagesJQuery() function in app.js is sequential (it waits for a callback
             // before processing another image) so we do not need to queue WebP images here
-            webpMachine.decode(content).then(function (uri) {
-                // DEV: WebpMachine.decode() returns a data: URI
-                // We callback before the node is set so that we don't incur slow DOM rewrites before processing more images
-                if (callback) callback(uri);
-                node.setAttribute(nodeAttribute, uri);
-            }).catch(function (err) {
-                console.error('There was an error decoding image in WebpMachine', err);
-                if (callback) callback();
-            });
+            var canvas = document.createElement("canvas");
+            webpMachine.decodeToCanvas(canvas, content);
+            // TODO copy all the img attributes to the new canvas, and remove the img node afterwards
+            node.parentNode.appendChild(canvas);
+            // TODO we don't handle images sequentially
+            if (callback) callback();
         } else {
             var blob = new Blob([content], {
                 type: mimeType
