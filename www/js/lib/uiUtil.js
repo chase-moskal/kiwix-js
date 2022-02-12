@@ -485,7 +485,7 @@ define(rqDef, function(settingsStore) {
     }
 
     // If global variable webpMachine is true (set in init.js), then we need to initialize the WebP Polyfill
-    if (webpMachine) webpMachine = new webpHero.WebpMachine();
+    if (webpMachine) webpMachine = new webpHero.WebpMachine({useCanvasElements: true});
 
     /**
      * Functions and classes exposed by this module
