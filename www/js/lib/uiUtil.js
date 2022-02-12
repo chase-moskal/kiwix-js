@@ -46,27 +46,30 @@ define(rqDef, function(settingsStore) {
      * @param {Function} callback An optional function to call with the URI
      */
     function feedNodeWithBlob(node, nodeAttribute, content, mimeType, callback) {
-        // Decode WebP data if the browser does not support WebP and the mimeType is webp
-        if (webpMachine && /image\/webp/i.test(mimeType)) {
-            // DEV: Note that webpMachine is single threaded and will reject an image if it is busy
-            // However, the loadImagesJQuery() function in app.js is sequential (it waits for a callback
-            // before processing another image) so we do not need to queue WebP images here
-            var canvas = document.createElement("canvas");
-            webpMachine.decodeToCanvas(canvas, content);
-            // TODO copy all the img attributes to the new canvas, and remove the img node afterwards
-            node.parentNode.appendChild(canvas);
-            // TODO we don't handle images sequentially
-            if (callback) callback();
-        } else {
-            var blob = new Blob([content], {
-                type: mimeType
-            });
+        var insertBlob = function (blob) {
             var url = URL.createObjectURL(blob);
             if (callback) callback(url);
             node.addEventListener('load', function () {
                 URL.revokeObjectURL(url);
             });
             node.setAttribute(nodeAttribute, url);
+        };
+        // Decode WebP data if the browser does not support WebP and the mimeType is webp
+        if (webpMachine && /image\/webp/i.test(mimeType)) {
+            // DEV: Note that webpMachine is single threaded and will reject an image if it is busy
+            // However, the loadImagesJQuery() function in app.js is sequential (it waits for a callback
+            // before processing another image) so we do not need to queue WebP images here
+            var canvas = document.createElement("canvas");
+            webpMachine.decodeToCanvas(canvas, content).then(function () {
+                var imgBlob = canvas.toBlob ? canvas.toBlob() : canvas.msToBlob ? canvas.msToBlob() : null;
+                if (!imgBlob) throw('Could not extract image BLOB from canvas!');
+                insertBlob(imgBlob);
+            });
+        } else {
+            var imgBlob = new Blob([content], {
+                type: mimeType
+            });
+            insertBlob(imgBlob);
         }
     }
 
